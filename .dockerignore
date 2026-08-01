@@ -1,0 +1,37 @@
+.git
+.gitignore
+.gitattributes
+
+# Dependências: reinstaladas dentro da imagem
+node_modules
+vendor
+
+# Build local do Vite: refeito na etapa de assets
+public/build
+public/hot
+
+# Ambiente e banco locais nunca vão para a imagem
+.env
+.env.backup
+.env.production
+database/*.sqlite
+database/*.sqlite-journal
+
+# Cache e logs locais
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+bootstrap/cache/*
+.phpunit.result.cache
+.phpunit.cache
+
+# Coisas de desenvolvimento
+tests
+phpunit.xml
+.editorconfig
+.vscode
+.idea
+README.md
+DEPLOY.md
+CLAUDE.md

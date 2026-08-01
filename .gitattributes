@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Scripts do container precisam de LF mesmo em checkout no Windows,
+# senão o shell do Alpine falha com "no such file or directory"
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
+
+/.github export-ignore
+CHANGELOG.md export-ignore
+.styleci.yml export-ignore
