@@ -238,7 +238,18 @@ Seguir obrigatoriamente:
 
 ---
 
-## 11. Fora do Escopo (Não Implementar)
+## 11. Produção
+
+- Deploy no Coolify via `docker-compose.yml` — passo a passo em `DEPLOY.md`
+- A imagem roda nginx + php-fpm na porta **8080**; `/up` é o healthcheck
+- Migrations rodam sozinhas no boot (`docker/entrypoint.sh`)
+- O container **falha ao subir sem `APP_KEY`** — proposital, para não expor sessões quebradas
+- Não existe autocadastro: o primeiro gestor nasce de `php artisan usuario:gestor`
+- Locale `pt_BR` com fallback `en`; traduções em `lang/pt_BR/`
+
+---
+
+## 12. Fora do Escopo (Não Implementar)
 
 - Pacotes quebrados ou incompletos
 - Filtro de carregamento por comprimento mínimo
