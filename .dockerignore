@@ -10,12 +10,22 @@ vendor
 public/build
 public/hot
 
-# Ambiente e banco locais nunca vão para a imagem
+# Ambiente e banco locais nunca vão para a imagem.
+# Regra ampla: .env.local, .env.staging e afins também carregam segredos.
 .env
-.env.backup
-.env.production
-database/*.sqlite
-database/*.sqlite-journal
+.env.*
+*.sqlite
+*.sqlite-journal
+*.sql
+*.dump
+
+# Chaves e certificados jamais entram na imagem
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
 
 # Cache e logs locais
 storage/framework/cache/*

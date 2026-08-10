@@ -33,7 +33,11 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Desligado de propósito: com 'serve' o Laravel registra
+            // GET e PUT em /storage/{path} sem autenticação — protegidos
+            // apenas por URL assinada. Este projeto não guarda nem recebe
+            // arquivos, então a rota seria superfície de ataque sem uso.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

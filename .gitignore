@@ -1,8 +1,5 @@
 *.log
 .DS_Store
-.env
-.env.backup
-.env.production
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -17,8 +14,34 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/*.pem
 /storage/pail
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Qualquer variante de .env fica de fora — só o exemplo entra.
+# Regra ampla de propósito: .env.local, .env.staging e afins carregam segredos.
+.env
+.env.*
+!.env.example
+
+# Overrides locais de compose costumam ter senha de banco
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Dumps e backups de banco
+*.sql
+*.sqlite
+*.sqlite-journal
+*.dump
+!database/schema/*.sql
+
+# Chaves e certificados
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
