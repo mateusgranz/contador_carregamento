@@ -35,29 +35,31 @@ RUN composer dump-autoload --optimize --no-dev
 # ---------- Etapa 3: imagem final ----------
 FROM php:8.4-fpm-alpine
 
-# nginx serve os arquivos, supervisor mantém nginx e php-fpm juntos no container
+# nginx serve os arquivos, supervisor mantém nginx e php-fpm juntos no container.
+#
+# Extensões: apenas o que as dependências realmente exigem (conferido no
+# composer.lock). A extensão intl NÃO entra — nada no projeto usa
+# NumberFormatter/Collator, os polyfills do Symfony cobrem o resto, e compilá-la
+# levava mais de 4 minutos e estourava a memória de VPS pequena.
+#
+# -j2 em vez de $(nproc): gcc paralelo demais é o que derruba build em servidor
+# com pouca RAM, e aqui sobrou pouca coisa para compilar.
 RUN apk add --no-cache \
         nginx \
         supervisor \
         libpng \
         libjpeg-turbo \
         freetype \
-        icu-libs \
-        oniguruma \
     && apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         libpng-dev \
         libjpeg-turbo-dev \
         freetype-dev \
-        icu-dev \
-        oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" \
+    && docker-php-ext-install -j2 \
         pdo_mysql \
         gd \
-        intl \
         opcache \
-        bcmath \
     && apk del .build-deps
 
 WORKDIR /var/www/html

@@ -180,6 +180,12 @@ O MySQL não subiu. Veja os logs dele — quase sempre é `DB_ROOT_PASSWORD` vaz
 **Tela sem estilo, tudo desalinhado**
 O `APP_URL` está errado ou com `http://` num domínio que serve HTTPS.
 
+**O build roda vários minutos e morre sem mensagem de erro**
+Falta de memória no servidor durante a compilação das extensões PHP. O
+processo é morto pelo kernel e o log simplesmente para no meio, sem erro.
+O Dockerfile já compila só o essencial e com `-j2` justamente por isso;
+se voltar a acontecer, o servidor precisa de mais RAM ou de swap.
+
 **Erro 419 ao enviar formulários**
 Mesma causa: `APP_URL` diferente do domínio real quebra a validação do CSRF.
 
