@@ -14,7 +14,7 @@ fi
 
 # storage pode vir de um volume novo, sem as subpastas que o Laravel espera
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
+chown -R nginx:nginx storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
 echo "==> Aguardando o banco de dados"

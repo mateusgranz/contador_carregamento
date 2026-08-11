@@ -33,49 +33,61 @@ RUN composer dump-autoload --optimize --no-dev
 
 
 # ---------- Etapa 3: imagem final ----------
-FROM php:8.4-fpm-alpine
+#
+# Alpine puro com os pacotes PHP já compilados, em vez da imagem php:8.4-fpm
+# com docker-php-ext-install.
+#
+# Motivo: compilar extensão exige instalar ~390 MB de gcc/g++/binutils e
+# rodar o compilador em paralelo com o build do Vite. Em VPS pequena isso
+# estoura a memória e o kernel mata o build no meio, sem mensagem de erro.
+# Aqui não há compilação alguma: só download de binários prontos.
+FROM alpine:3.22
 
-# nginx serve os arquivos, supervisor mantém nginx e php-fpm juntos no container.
-#
-# Extensões: apenas o que as dependências realmente exigem (conferido no
-# composer.lock). A extensão intl NÃO entra — nada no projeto usa
-# NumberFormatter/Collator, os polyfills do Symfony cobrem o resto, e compilá-la
-# levava mais de 4 minutos e estourava a memória de VPS pequena.
-#
-# -j2 em vez de $(nproc): gcc paralelo demais é o que derruba build em servidor
-# com pouca RAM, e aqui sobrou pouca coisa para compilar.
+# Só as extensões que o composer.lock realmente exige, mais pdo_mysql,
+# opcache e gd. Nenhuma delas é compilada — vêm prontas do repositório.
 RUN apk add --no-cache \
         nginx \
         supervisor \
-        libpng \
-        libjpeg-turbo \
-        freetype \
-    && apk add --no-cache --virtual .build-deps \
-        $PHPIZE_DEPS \
-        libpng-dev \
-        libjpeg-turbo-dev \
-        freetype-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j2 \
-        pdo_mysql \
-        gd \
-        opcache \
-    && apk del .build-deps
+        php84 \
+        php84-fpm \
+        php84-opcache \
+        php84-pdo \
+        php84-pdo_mysql \
+        php84-mysqlnd \
+        php84-gd \
+        php84-mbstring \
+        php84-dom \
+        php84-xml \
+        php84-xmlreader \
+        php84-xmlwriter \
+        php84-simplexml \
+        php84-tokenizer \
+        php84-session \
+        php84-fileinfo \
+        php84-ctype \
+        php84-iconv \
+        php84-openssl \
+        php84-phar \
+        php84-curl \
+        php84-zip \
+    # O Laravel chama "php"; no Alpine o binário se chama php84
+    && ln -sf /usr/bin/php84 /usr/bin/php
 
 WORKDIR /var/www/html
 
 COPY --from=vendor /app /var/www/html
 COPY --from=assets /app/public/build /var/www/html/public/build
 
-COPY docker/nginx.conf      /etc/nginx/nginx.conf
-COPY docker/php.ini         /usr/local/etc/php/conf.d/99-app.ini
+COPY docker/nginx.conf       /etc/nginx/nginx.conf
+COPY docker/php.ini          /etc/php84/conf.d/99-app.ini
+COPY docker/php-fpm.conf     /etc/php84/php-fpm.d/www.conf
 COPY docker/supervisord.conf /etc/supervisord.conf
-COPY docker/entrypoint.sh   /usr/local/bin/entrypoint
+COPY docker/entrypoint.sh    /usr/local/bin/entrypoint
 RUN chmod +x /usr/local/bin/entrypoint
 
-# O php-fpm roda como www-data; só storage e bootstrap/cache precisam de escrita
-RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chown -R www-data:www-data storage bootstrap/cache \
+# O php-fpm roda como nginx; só storage e bootstrap/cache precisam de escrita
+RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R nginx:nginx storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 8080
