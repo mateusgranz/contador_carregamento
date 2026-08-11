@@ -30,13 +30,19 @@ services:
       SESSION_DRIVER: database
       # 60 dias: o operador marca "manter conectado" e não quer logar de novo
       SESSION_LIFETIME: "86400"
-      SESSION_SECURE_COOKIE: "true"
+      # Cookie "secure" só trafega em HTTPS. Em domínio http (sslip.io, por
+      # exemplo) o navegador descarta o cookie e o login entra em loop —
+      # nesse caso cadastre SESSION_SECURE_COOKIE=false no Coolify.
+      SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
 
       CACHE_STORE: database
       QUEUE_CONNECTION: database
 
       LOG_CHANNEL: stderr
       LOG_LEVEL: warning
+    # Declara a porta para o Coolify saber para onde mandar o tráfego do domínio
+    expose:
+      - "8080"
     volumes:
       # Só os logs e arquivos gerados precisam sobreviver ao redeploy
       - storage-app:/var/www/html/storage/app

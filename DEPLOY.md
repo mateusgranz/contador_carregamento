@@ -37,16 +37,33 @@ git push -u origin main
 
 ## 3. Crie o recurso no Coolify
 
-No painel: **+ New** → **Resource** → **Docker Compose**, apontando para o seu
-repositório. O Coolify vai encontrar o `docker-compose.yml` na raiz.
+No painel: **+ New** → **Resource** → escolha o seu repositório Git.
 
-O arquivo já sobe **dois serviços**: a aplicação e um MySQL 8.4 com volume
-persistente. Se você preferir usar um banco gerenciado pelo próprio Coolify,
-apague o serviço `mysql` do compose e ajuste `DB_HOST` para o host que ele
-fornecer.
+### ⚠️ Troque o Build Pack — este é o passo que mais confunde
 
-**Porta:** a aplicação escute na **8080**. Se o Coolify pedir o "Ports Exposes",
-informe `8080`.
+Ao adicionar um repositório, o Coolify assume **Nixpacks** por padrão. O
+Nixpacks tenta adivinhar como construir o projeto e **ignora completamente** o
+`Dockerfile` e o `docker-compose.yml`. O resultado é um container que sobe e
+morre (status `Exited`).
+
+Em **Configuration → General → Build Pack**, troque de `Nixpacks` para
+**`Docker Compose`** e clique em **Save**.
+
+Aparece então o campo **Docker Compose Location**. Deixe `/docker-compose.yml`.
+
+Salve de novo. O Coolify lê o arquivo e passa a mostrar os dois serviços:
+`app` e `mysql`.
+
+> Se preferir usar um banco gerenciado pelo próprio Coolify (com backup pela
+> interface), apague o serviço `mysql` do compose e aponte `DB_HOST` para o
+> host que ele fornecer. O caminho documentado aqui é o do compose, porque foi
+> o testado de ponta a ponta.
+
+### Domínio
+
+O domínio precisa apontar para o serviço **`app`**, na porta **8080** — nunca
+para o `mysql`. O compose declara `expose: 8080`, então o Coolify já sugere a
+porta certa.
 
 ---
 
@@ -64,8 +81,24 @@ Cadastre em **Environment Variables**:
 | `DB_DATABASE` | `carregamento` | Opcional, esse é o padrão |
 | `DB_USERNAME` | `carregamento` | Opcional, esse é o padrão |
 
-`APP_ENV=production`, `APP_DEBUG=false`, o locale `pt_BR` e o
-`SESSION_SECURE_COOKIE=true` já vêm fixos no compose — não precisa cadastrar.
+`APP_ENV=production`, `APP_DEBUG=false` e o locale `pt_BR` já vêm fixos no
+compose — não precisa cadastrar.
+
+### 🔴 Se o domínio for `http://` (sem HTTPS)
+
+Cadastre também:
+
+| Variável | Valor |
+|---|---|
+| `SESSION_SECURE_COOKIE` | `false` |
+
+O padrão é `true`, que manda o navegador só enviar o cookie de sessão por
+HTTPS. Num domínio `http://` — o `sslip.io` gerado pelo Coolify, por exemplo —
+o navegador simplesmente descarta o cookie: o login parece funcionar mas volta
+para a tela de login, ou dá erro 419.
+
+Ao colocar um domínio real com HTTPS depois, **remova essa variável** para
+voltar ao padrão seguro.
 
 ---
 
