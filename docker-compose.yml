@@ -10,37 +10,44 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      APP_NAME: "${APP_NAME:-Contador de Carregamento}"
-      APP_ENV: production
-      APP_KEY: "${APP_KEY}"
-      APP_DEBUG: "false"
-      APP_URL: "${APP_URL}"
+      # Diz ao Coolify que ESTE serviço atende o domínio, na porta 8080.
+      # Sem esta linha o Coolify não cria as regras do Traefik e o domínio
+      # responde "404 page not found" mesmo com o container saudável.
+      # O Coolify preenche a variável com o domínio configurado.
+      - SERVICE_FQDN_APP_8080
+      # Assim o APP_URL acompanha sozinho o domínio, sem risco de divergir
+      # (divergência quebra o CSRF e derruba o login com erro 419)
+      - "APP_URL=${SERVICE_FQDN_APP_8080}"
 
-      APP_LOCALE: pt_BR
-      APP_FALLBACK_LOCALE: en
-      APP_FAKER_LOCALE: pt_BR
+      - "APP_NAME=${APP_NAME:-Contador de Carregamento}"
+      - APP_ENV=production
+      - "APP_KEY=${APP_KEY}"
+      - APP_DEBUG=false
 
-      DB_CONNECTION: mysql
-      DB_HOST: mysql
-      DB_PORT: "3306"
-      DB_DATABASE: "${DB_DATABASE:-carregamento}"
-      DB_USERNAME: "${DB_USERNAME:-carregamento}"
-      DB_PASSWORD: "${DB_PASSWORD}"
+      - APP_LOCALE=pt_BR
+      - APP_FALLBACK_LOCALE=en
+      - APP_FAKER_LOCALE=pt_BR
 
-      SESSION_DRIVER: database
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - "DB_DATABASE=${DB_DATABASE:-carregamento}"
+      - "DB_USERNAME=${DB_USERNAME:-carregamento}"
+      - "DB_PASSWORD=${DB_PASSWORD}"
+
+      - SESSION_DRIVER=database
       # 60 dias: o operador marca "manter conectado" e não quer logar de novo
-      SESSION_LIFETIME: "86400"
+      - SESSION_LIFETIME=86400
       # Cookie "secure" só trafega em HTTPS. Em domínio http (sslip.io, por
       # exemplo) o navegador descarta o cookie e o login entra em loop —
       # nesse caso cadastre SESSION_SECURE_COOKIE=false no Coolify.
-      SESSION_SECURE_COOKIE: "${SESSION_SECURE_COOKIE:-true}"
+      - "SESSION_SECURE_COOKIE=${SESSION_SECURE_COOKIE:-true}"
 
-      CACHE_STORE: database
-      QUEUE_CONNECTION: database
+      - CACHE_STORE=database
+      - QUEUE_CONNECTION=database
 
-      LOG_CHANNEL: stderr
-      LOG_LEVEL: warning
-    # Declara a porta para o Coolify saber para onde mandar o tráfego do domínio
+      - LOG_CHANNEL=stderr
+      - LOG_LEVEL=warning
     expose:
       - "8080"
     volumes:

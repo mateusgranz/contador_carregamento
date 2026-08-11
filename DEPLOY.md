@@ -61,9 +61,20 @@ Salve de novo. O Coolify lê o arquivo e passa a mostrar os dois serviços:
 
 ### Domínio
 
-O domínio precisa apontar para o serviço **`app`**, na porta **8080** — nunca
-para o `mysql`. O compose declara `expose: 8080`, então o Coolify já sugere a
-porta certa.
+O compose já declara `SERVICE_FQDN_APP_8080` no serviço `app`. É essa linha que
+faz o Coolify criar as regras do Traefik apontando o domínio para a porta 8080
+do serviço certo — e ela também alimenta o `APP_URL` sozinha, para os dois nunca
+divergirem.
+
+Você só precisa informar o domínio no painel; não mexa em porta nem cadastre
+`APP_URL` à mão. E nunca coloque domínio no serviço `mysql`.
+
+> **Se o domínio responder `404 page not found`** em texto puro, com o container
+> aparecendo `healthy`: esse 404 é do Traefik, não do Laravel (o do Laravel é uma
+> página estilizada). Significa que nenhuma rota foi criada. Confirme com
+> `docker inspect <container> --format '{{json .Config.Labels}}' | grep -i traefik`
+> — se não vier nada, o `SERVICE_FQDN_APP_8080` não chegou ao Coolify: refaça o
+> deploy depois de garantir que o compose no repositório tem essa linha.
 
 ---
 
