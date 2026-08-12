@@ -28,9 +28,11 @@
 
         <div>
             <x-input-label for="password" :value="$edicao ? 'Nova senha (deixe em branco para manter)' : 'Senha'" />
+            {{-- :required em vez de @if aqui dentro: diretiva Blade na tag do
+                 componente quebra a leitura dos atributos e o input some --}}
             <x-text-input id="password" name="password" type="text" class="mt-1 block w-full"
                           autocomplete="new-password"
-                          @if (! $edicao) required @endif />
+                          :required="! $edicao" />
             <p class="text-xs text-gray-500 mt-1">
                 Mínimo de 6 caracteres. Fica visível para você poder anotar e passar para a pessoa.
             </p>
