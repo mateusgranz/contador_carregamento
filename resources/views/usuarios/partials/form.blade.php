@@ -42,7 +42,7 @@
         <div>
             <x-input-label for="role" value="Perfil" />
             <select id="role" name="role"
-                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    class="mt-1 block w-full min-h-[44px] border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                 <option value="carregador" @selected(old('role', $usuario->role ?? 'carregador') === 'carregador')>
                     Carregador — só a tela de carregamento
                 </option>
@@ -58,7 +58,7 @@
 
 <div class="flex items-center justify-end gap-3">
     <a href="{{ route('usuarios.index') }}"
-       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition">
+       class="inline-flex items-center min-h-[44px] px-4 bg-white border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition">
         Cancelar
     </a>
     <x-primary-button>{{ $edicao ? 'Salvar Alterações' : 'Criar Usuário' }}</x-primary-button>

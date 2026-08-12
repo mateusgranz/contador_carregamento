@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-3">
-            <a href="{{ route('usuarios.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Usuários</a>
+            <a href="{{ route('usuarios.index') }}" class="inline-flex items-center min-h-[44px] pr-2 text-gray-500 hover:text-gray-700 text-sm">← Usuários</a>
             <span class="text-gray-300">/</span>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ $usuario->name }}</h2>
         </div>

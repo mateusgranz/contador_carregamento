@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Usuários</h2>
             <a href="{{ route('usuarios.create') }}"
-               class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition">
+               class="inline-flex items-center min-h-[44px] px-4 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition">
                 + Novo Usuário
             </a>
         </div>
@@ -26,7 +26,47 @@
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+            {{-- Celular: cartões empilhados. A tabela não cabe em 390px e as
+                 ações ficavam cortadas pelo overflow, sem como alcançá-las. --}}
+            <div class="sm:hidden space-y-3">
+                @foreach ($usuarios as $usuario)
+                    <div class="bg-white shadow-sm rounded-lg p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-mono font-semibold text-gray-900 text-base">
+                                    {{ $usuario->code }}
+                                    @if ($usuario->is(auth()->user()))
+                                        <span class="text-xs text-gray-400 font-sans">(você)</span>
+                                    @endif
+                                </p>
+                                <p class="text-gray-800 mt-0.5">{{ $usuario->name }}</p>
+                            </div>
+                            <span class="shrink-0 px-2 py-1 rounded text-xs font-semibold
+                                         {{ $usuario->role === 'gestor'
+                                            ? 'text-indigo-700 bg-indigo-50'
+                                            : 'text-emerald-700 bg-emerald-50' }}">
+                                {{ $usuario->role === 'gestor' ? 'Gestor' : 'Carregador' }}
+                            </span>
+                        </div>
+
+                        <div class="flex gap-2 mt-4">
+                            <a href="{{ route('usuarios.edit', $usuario) }}"
+                               class="flex-1 inline-flex items-center justify-center min-h-[44px] bg-indigo-50 text-indigo-700 font-medium rounded hover:bg-indigo-100 transition">
+                                Editar
+                            </a>
+                            @unless ($usuario->is(auth()->user()))
+                                <button type="submit" form="excluir-usuario-{{ $usuario->id }}"
+                                        class="flex-1 inline-flex items-center justify-center min-h-[44px] bg-red-50 text-red-700 font-medium rounded hover:bg-red-100 transition">
+                                    Excluir
+                                </button>
+                            @endunless
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- Desktop: a tabela, que aqui cabe folgada --}}
+            <div class="hidden sm:block bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
@@ -56,12 +96,12 @@
                                 </td>
                                 <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                                     <a href="{{ route('usuarios.edit', $usuario) }}"
-                                       class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm rounded hover:bg-indigo-100 transition">
+                                       class="inline-flex items-center min-h-[44px] px-4 bg-indigo-50 text-indigo-700 text-sm rounded hover:bg-indigo-100 transition">
                                         Editar
                                     </a>
                                     @unless ($usuario->is(auth()->user()))
                                         <button type="submit" form="excluir-usuario-{{ $usuario->id }}"
-                                                class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 text-sm rounded hover:bg-red-100 transition">
+                                                class="inline-flex items-center min-h-[44px] px-4 bg-red-50 text-red-700 text-sm rounded hover:bg-red-100 transition">
                                             Excluir
                                         </button>
                                     @endunless

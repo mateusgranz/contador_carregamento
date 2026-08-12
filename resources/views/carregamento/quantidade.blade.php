@@ -3,7 +3,7 @@
     <div class="max-w-3xl mx-auto px-4 py-6">
 
         <a href="{{ route('carregamento.index') }}"
-           class="inline-flex items-center gap-2 text-lg text-gray-600 mb-5">
+           class="inline-flex items-center gap-2 min-h-[48px] text-lg text-gray-600 mb-3">
             <span class="text-2xl">‹</span> Trocar produto
         </a>
 

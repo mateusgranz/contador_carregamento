@@ -60,7 +60,7 @@
         <div>
             <x-input-label for="unit" value="Unidade de Venda" />
             <select id="unit" name="unit"
-                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    class="mt-1 block w-full min-h-[44px] border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                 @foreach (Product::UNIDADES as $codigo => [$abrev, $singular, $plural])
                     {{-- data-modos diz em quais modalidades esta unidade faz sentido --}}
                     <option value="{{ $codigo }}"

@@ -3,7 +3,7 @@
         <div class="flex items-center justify-between">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Produtos</h2>
             <a href="{{ route('produtos.create') }}"
-               class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition">
+               class="inline-flex items-center min-h-[44px] px-4 bg-gray-800 text-white text-sm font-medium rounded-md hover:bg-gray-700 transition">
                 + Novo Produto
             </a>
         </div>
@@ -18,13 +18,52 @@
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                @if ($produtos->isEmpty())
-                    <div class="p-10 text-center text-gray-500">
-                        Nenhum produto cadastrado ainda.
-                        <a href="{{ route('produtos.create') }}" class="text-indigo-600 hover:underline ml-1">Criar o primeiro.</a>
-                    </div>
-                @else
+            @if ($produtos->isEmpty())
+                <div class="bg-white shadow-sm sm:rounded-lg p-10 text-center text-gray-500">
+                    Nenhum produto cadastrado ainda.
+                    <a href="{{ route('produtos.create') }}" class="text-indigo-600 hover:underline ml-1">Criar o primeiro.</a>
+                </div>
+            @else
+                {{-- Celular: cartões empilhados. A tabela não cabe em 390px e as
+                     ações ficavam cortadas pelo overflow, sem como alcançá-las. --}}
+                <div class="sm:hidden space-y-3">
+                    @foreach ($produtos as $produto)
+                        <div class="bg-white shadow-sm rounded-lg p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <p class="font-semibold text-gray-900">{{ $produto->name }}</p>
+                                <span class="shrink-0 font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded text-xs">
+                                    {{ $produto->unidadeAbreviada() }}
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-gray-600 mt-1">
+                                @if ($produto->usaPeso())
+                                    Por peso —
+                                    {{ number_format((float) $produto->kg_per_unit, 4, ',', '.') }} kg
+                                    por {{ $produto->unidadeLabel(1) }}
+                                @else
+                                    {{ $produto->usaVolume() ? 'Por volume' : 'Por área' }} —
+                                    {{ $produto->package_types_count }}
+                                    {{ $produto->package_types_count === 1 ? 'tipo de pacote' : 'tipos de pacote' }}
+                                @endif
+                            </p>
+
+                            <div class="flex gap-2 mt-4">
+                                <a href="{{ route('produtos.edit', $produto) }}"
+                                   class="flex-1 inline-flex items-center justify-center min-h-[44px] bg-indigo-50 text-indigo-700 font-medium rounded hover:bg-indigo-100 transition">
+                                    Editar
+                                </a>
+                                <button type="submit" form="excluir-produto-{{ $produto->id }}"
+                                        class="flex-1 inline-flex items-center justify-center min-h-[44px] bg-red-50 text-red-700 font-medium rounded hover:bg-red-100 transition">
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Desktop: a tabela, que aqui cabe folgada --}}
+                <div class="hidden sm:block bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
@@ -56,27 +95,32 @@
                                     </td>
                                     <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
                                         <a href="{{ route('produtos.edit', $produto) }}"
-                                           class="inline-flex items-center px-3 py-1.5 bg-indigo-50 text-indigo-700 text-sm rounded hover:bg-indigo-100 transition">
+                                           class="inline-flex items-center min-h-[44px] px-4 bg-indigo-50 text-indigo-700 text-sm rounded hover:bg-indigo-100 transition">
                                             Editar
                                         </a>
-                                        <form action="{{ route('produtos.destroy', $produto) }}" method="POST"
-                                              class="inline"
-                                              onsubmit="return confirm('Excluir {{ addslashes($produto->name) }} e todos os seus tipos de pacote?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-700 text-sm rounded hover:bg-red-100 transition">
-                                                Excluir
-                                            </button>
-                                        </form>
+                                        <button type="submit" form="excluir-produto-{{ $produto->id }}"
+                                                class="inline-flex items-center min-h-[44px] px-4 bg-red-50 text-red-700 text-sm rounded hover:bg-red-100 transition">
+                                            Excluir
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
-                @endif
-            </div>
+                </div>
+            @endif
 
         </div>
     </div>
+
+    {{-- Forms de exclusão fora das listas: form aninhado é HTML inválido, e
+         assim o mesmo form serve ao botão do cartão e ao da tabela --}}
+    @foreach ($produtos as $produto)
+        <form id="excluir-produto-{{ $produto->id }}" action="{{ route('produtos.destroy', $produto) }}"
+              method="POST" class="hidden"
+              onsubmit="return confirm('Excluir {{ addslashes($produto->name) }} e todos os seus tipos de pacote?')">
+            @csrf
+            @method('DELETE')
+        </form>
+    @endforeach
 </x-app-layout>

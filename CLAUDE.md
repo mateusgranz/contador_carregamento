@@ -209,6 +209,13 @@ Seguir obrigatoriamente:
 - Fundo branco, alto contraste — sem cores escuras de fundo na tela de carregamento
 - Nenhuma ação deve exigir mais de 2 toques para ser executada
 
+**Vale para todas as telas, inclusive as do gestor:** o sistema é usado principalmente no celular.
+
+- Alvo de toque mínimo de **44px** em qualquer link, botão, input ou select
+- Checkbox pequeno é aceitável desde que envolvido por um `<label>` de 44px
+- **Nunca** usar `<table>` como layout único de listagem: em 390px ela estoura e o `overflow-hidden` do card corta as ações, deixando-as inalcançáveis. Cartões empilhados no celular (`sm:hidden`) e tabela do `sm:` para cima
+- Não bloquear o zoom com `maximum-scale` — é barreira de acessibilidade
+
 ---
 
 ## 8. PDF e Envio WhatsApp

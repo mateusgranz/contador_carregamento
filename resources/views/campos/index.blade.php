@@ -40,7 +40,7 @@
                         <div class="sm:col-span-3">
                             <x-input-label for="type" value="Tipo" />
                             <select id="type" name="type"
-                                    class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+                                    class="mt-1 block w-full min-h-[44px] border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
                                 <option value="texto"  @selected(old('type') === 'texto')>Texto</option>
                                 <option value="numero" @selected(old('type') === 'numero')>Número</option>
                                 <option value="data"   @selected(old('type') === 'data')>Data</option>
@@ -48,9 +48,11 @@
                         </div>
 
                         <div class="sm:col-span-2">
-                            <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                            {{-- min-h e checkbox maior: no celular o alvo de toque
+                                 era de 16px, impossível de acertar com precisão --}}
+                            <label class="inline-flex items-center gap-2 min-h-[44px] text-sm text-gray-700 cursor-pointer">
                                 <input type="checkbox" name="required" value="1" @checked(old('required'))
-                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                       class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                 Obrigatório
                             </label>
                         </div>
@@ -97,14 +99,18 @@
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="active" value="{{ $campo->active ? 0 : 1 }}">
+                                        {{-- O botão tem 44px de altura para o toque,
+                                             mas o trilho visual continua com 24px --}}
                                         <button type="submit"
                                                 role="switch"
                                                 aria-checked="{{ $campo->active ? 'true' : 'false' }}"
                                                 aria-label="{{ $campo->active ? 'Desativar' : 'Ativar' }} {{ $campo->label }}"
-                                                class="relative inline-flex h-6 w-11 items-center rounded-full transition
-                                                       {{ $campo->active ? 'bg-green-600' : 'bg-gray-300' }}">
-                                            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition
-                                                         {{ $campo->active ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                                class="inline-flex items-center justify-center min-h-[44px] px-1">
+                                            <span class="relative inline-flex h-6 w-11 items-center rounded-full transition
+                                                         {{ $campo->active ? 'bg-green-600' : 'bg-gray-300' }}">
+                                                <span class="inline-block h-4 w-4 transform rounded-full bg-white transition
+                                                             {{ $campo->active ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                            </span>
                                         </button>
                                     </form>
 
@@ -113,7 +119,7 @@
                                     </span>
 
                                     <button type="submit" form="excluir-{{ $campo->id }}"
-                                            class="text-red-400 hover:text-red-600 text-sm hover:underline transition">
+                                            class="inline-flex items-center min-h-[44px] px-2 text-red-500 hover:text-red-700 text-sm transition">
                                         Excluir
                                     </button>
 

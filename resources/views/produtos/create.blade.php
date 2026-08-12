@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex items-center gap-3">
-            <a href="{{ route('produtos.index') }}" class="text-gray-400 hover:text-gray-600 text-sm">← Produtos</a>
+            <a href="{{ route('produtos.index') }}" class="inline-flex items-center min-h-[44px] pr-2 text-gray-500 hover:text-gray-700 text-sm">← Produtos</a>
             <span class="text-gray-300">/</span>
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Novo Produto</h2>
         </div>
@@ -46,7 +46,7 @@
                             </p>
                         </div>
                         <button type="button" id="btn-add-pacote"
-                                class="inline-flex items-center px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition">
+                                class="inline-flex items-center min-h-[44px] px-4 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition">
                             + Adicionar Tipo
                         </button>
                     </div>
@@ -105,7 +105,7 @@
 
                 <div class="flex items-center justify-end gap-3">
                     <a href="{{ route('produtos.index') }}"
-                       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition">
+                       class="inline-flex items-center min-h-[44px] px-4 bg-white border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition">
                         Cancelar
                     </a>
                     <x-primary-button>Salvar Produto</x-primary-button>
