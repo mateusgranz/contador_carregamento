@@ -67,15 +67,18 @@ Middleware de autorização deve bloquear acesso cruzado entre perfis.
 | name | string | Nome do produto |
 | unit | enum('m2','m3','m','br','cx','un','pc') | Unidade de venda — campo único, veja abaixo |
 | description | text nullable | Observações opcionais |
-| calc_mode | enum('pacote','peso') | Modalidade de cálculo — default: pacote |
+| calc_mode | enum('pacote','volume','peso') | Modalidade de cálculo — default: pacote |
 | kg_per_unit | decimal(10,4) nullable | Só no modo peso — kg de cada unidade |
 | timestamps | | |
 
 **Unidades de venda:** `m2` (m²), `m3` (m³), `m` (M, metro linear), `br` (BR, barra), `cx` (CX, caixa), `un` (UN, unidade), `pc` (PC, peça). São **inteiras** (sem fração): br, cx, un, pc.
 
 **Modalidades de cálculo:**
-- `pacote` — o carregador conta pacotes; o sistema acumula m² a partir de `package_types`. Como a conta gera área, só aceita `unit` m² ou m³.
+- `pacote` — conta pacotes e acumula **m²**: `(largura/1000) × (comprimento/100) × peças`. Só aceita `unit` m².
+- `volume` — conta pacotes e acumula **m³**, entrando a espessura: `(largura/1000) × (comprimento/100) × (espessura/1000) × peças`. Só aceita `unit` m³.
 - `peso` — o carregador pesa na balança; o sistema converte kg na unidade do produto usando `kg_per_unit`. Aceita qualquer unidade. Produtos neste modo **não têm** `package_types`, e salvar nesta modalidade apaga os que existirem.
+
+As duas primeiras compartilham a mesma tela de contagem; muda só a unidade exibida e qual valor do pacote é somado.
 
 ### Tabela: `package_types`
 | Campo | Tipo | Observação |
@@ -86,12 +89,16 @@ Middleware de autorização deve bloquear acesso cruzado entre perfis.
 | width_mm | decimal(8,2) | Largura das peças em mm |
 | thickness_mm | decimal(8,2) | Espessura das peças em mm |
 | pieces_count | integer | Quantidade de peças no pacote |
-| sqm_per_package | decimal(8,4) | Calculado automaticamente no Model |
+| sqm_per_package | decimal(8,4) | m² do pacote — calculado no Model |
+| cbm_per_package | decimal(12,6) | m³ do pacote — calculado no Model |
 | timestamps | | |
 
-**Regra de negócio crítica:** `sqm_per_package` deve ser calculado automaticamente pelo Model usando:
-`(width_mm / 1000) * (length_cm / 100) * pieces_count`
-Nunca confiar no valor enviado pelo formulário para este campo.
+**Regra de negócio crítica:** os dois são calculados automaticamente pelo Model, sempre, independente da modalidade do produto:
+
+- `sqm_per_package` = `(width_mm / 1000) * (length_cm / 100) * pieces_count`
+- `cbm_per_package` = `(width_mm / 1000) * (length_cm / 100) * (thickness_mm / 1000) * pieces_count`
+
+Nunca confiar nos valores enviados pelo formulário. Gravar os dois permite trocar a modalidade do produto sem recadastrar os pacotes.
 
 ### Tabela: `loadings`
 | Campo | Tipo | Observação |
@@ -99,10 +106,8 @@ Nunca confiar no valor enviado pelo formulário para este campo.
 | id | bigInt PK | |
 | user_id | bigInt FK | references users(id) — carregador |
 | product_id | bigInt FK | references products(id) |
-| target_sqm | decimal(8,4) nullable | Metragem do pedido — só no modo pacote |
-| loaded_sqm | decimal(8,4) nullable | Total acumulado — só no modo pacote |
-| target_qty | decimal(10,4) nullable | Quantidade pedida — só no modo peso |
-| loaded_qty | decimal(10,4) nullable | Total acumulado — só no modo peso |
+| target_amount | decimal(14,4) nullable | Quantidade do pedido, na unidade do produto |
+| loaded_amount | decimal(14,4) nullable | Total acumulado, na unidade do produto |
 | status | enum('em_andamento','finalizado') | default: em_andamento |
 | finished_at | timestamp nullable | |
 | timestamps | | |
@@ -151,7 +156,7 @@ Pesagens do modo peso. Cada bobina/lote pesado vira um registro.
 | loading_id | bigInt FK | references loadings(id) |
 | package_type_id | bigInt FK | references package_types(id) |
 | quantity | integer | Quantidade de pacotes deste tipo |
-| subtotal_sqm | decimal(8,4) | sqm_per_package × quantity |
+| subtotal | decimal(14,4) | rendimento do pacote × quantity, na unidade da modalidade |
 | timestamps | | |
 
 ---
@@ -183,7 +188,7 @@ Pesagens do modo peso. Cada bobina/lote pesado vira um registro.
 2. O total de m² carregados é calculado e exibido em tempo real conforme os pacotes são adicionados.
 3. Quando restar menos de 1 pacote equivalente para completar o pedido, o sistema abre um **pop-up** avisando que falta apenas mais um pacote e indicando a medida mais próxima da metragem restante. A sugestão **nunca é obrigatória**: o pop-up sempre oferece uma saída ("Não tenho essa medida") e o carregador pode adicionar qualquer outro pacote no lugar, porque a medida sugerida pode não existir no pátio.
 4. O carregador pode adicionar e remover pacotes livremente a qualquer momento.
-5. O `loaded_sqm` deve ser sempre recalculado a partir dos `loading_items`, e o `loaded_qty` a partir das `loading_weighings` — nunca somados incrementalmente, para evitar inconsistências.
+5. O `loaded_amount` deve ser sempre recalculado (`Loading::recalcularTotal()`) — a partir dos `loading_items` nas modalidades de pacote e volume, e das `loading_weighings` no modo peso. Nunca somar incrementalmente, para evitar inconsistências.
 7. **Modo peso:** o passo 3 é uma calculadora, não um contador. A tela mostra de saída quanto o pedido dá na balança (`quantidade × kg_per_unit`). O carregador digita o peso lido e o sistema responde quanto retirar (ou quanto ainda falta) e qual peso deixar na balança. O cálculo é um GET e **não grava nada**: só é registrado quando o carregador escolhe entre "já retirei" (registra a quantidade ajustada) ou "registrar tudo".
 8. **Modo peso:** unidades discretas (barra, peça) são arredondadas para baixo — pedaço incompleto não conta. Metro admite fração.
 6. Ao finalizar, o status muda para `finalizado` e `finished_at` é preenchido.
@@ -230,8 +235,8 @@ Seguir obrigatoriamente:
 ## 10. Padrões Invioláveis
 
 - Nunca expor rotas do Gestor para o Carregador e vice-versa
-- Nunca confiar no `sqm_per_package` vindo do formulário — sempre recalcular no Model
-- Nunca recalcular `loaded_sqm` de forma incremental — sempre somar os `loading_items`
+- Nunca confiar no `sqm_per_package` nem no `cbm_per_package` vindos do formulário — sempre recalcular no Model
+- Nunca recalcular `loaded_amount` de forma incremental — sempre somar a origem (itens ou pesagens)
 - Sempre usar migrations para qualquer alteração no banco — nunca editar o banco direto
 - Sempre que criar ou editar um Model, garantir os relacionamentos `hasMany` / `belongsTo`
 - Nunca deixar lógica de negócio no Blade — apenas exibição

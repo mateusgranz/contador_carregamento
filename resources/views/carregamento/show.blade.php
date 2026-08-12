@@ -1,21 +1,28 @@
-<x-carregamento-layout titulo="Carregando" :titulo-tela="$carregamento->product->name">
+@php
+    // A mesma tela serve ao modo pacote (m²) e ao volume (m³);
+    // muda só a unidade e quantas casas fazem sentido mostrar.
+    $abrev    = $produto->unidadeAbreviada();
+    $decimais = $produto->usaVolume() ? 4 : 2;
+@endphp
+
+<x-carregamento-layout titulo="Carregando" :titulo-tela="$produto->name">
 
     {{-- Total sempre visível no topo, em destaque --}}
     <div class="sticky top-0 z-10 bg-white border-b-4 border-gray-900">
         <div class="max-w-3xl mx-auto px-4 py-4 text-center">
             <p class="text-lg font-semibold text-gray-600 uppercase tracking-wide">Total carregado</p>
             <p class="text-6xl font-black leading-none mt-1 tabular-nums">
-                {{ number_format((float) $carregamento->loaded_sqm, 2, ',', '.') }}
-                <span class="text-3xl font-bold">m²</span>
+                {{ number_format((float) $carregamento->loaded_amount, $decimais, ',', '.') }}
+                <span class="text-3xl font-bold">{{ $abrev }}</span>
             </p>
 
             @if ($restante !== null)
                 <p class="text-lg font-semibold mt-2 {{ $restante > 0 ? 'text-gray-700' : 'text-green-700' }}">
                     @if ($restante > 0)
-                        Faltam {{ number_format($restante, 2, ',', '.') }} m²
-                        de {{ number_format((float) $carregamento->target_sqm, 2, ',', '.') }} m²
+                        Faltam {{ number_format($restante, $decimais, ',', '.') }} {{ $abrev }}
+                        de {{ number_format((float) $carregamento->target_amount, $decimais, ',', '.') }} {{ $abrev }}
                     @else
-                        Pedido de {{ number_format((float) $carregamento->target_sqm, 2, ',', '.') }} m² completo
+                        Pedido de {{ number_format((float) $carregamento->target_amount, $decimais, ',', '.') }} {{ $abrev }} completo
                     @endif
                 </p>
             @endif
@@ -27,8 +34,9 @@
         <div class="space-y-4">
             @foreach ($tipos as $tipo)
                 @php
-                    $quantidade = $quantidades[$tipo->id] ?? 0;
-                    $subtotal   = (float) $tipo->sqm_per_package * $quantidade;
+                    $quantidade  = $quantidades[$tipo->id] ?? 0;
+                    $rendimento  = $tipo->rendimentoPara($produto->calc_mode);
+                    $subtotal    = $rendimento * $quantidade;
                 @endphp
 
                 {{-- scroll-mt evita que o cabeçalho fixo cubra o card ao voltar ancorado --}}
@@ -79,13 +87,13 @@
 
                     </div>
 
-                    {{-- m² do pacote sempre visível embaixo do botão --}}
+                    {{-- Rendimento do pacote sempre visível embaixo do botão --}}
                     <div class="mt-3 pt-3 border-t-2 border-gray-200 flex items-baseline justify-between gap-2">
                         <p class="text-lg font-semibold">
-                            {{ number_format((float) $tipo->sqm_per_package, 4, ',', '.') }} m² por pacote
+                            {{ number_format($rendimento, 4, ',', '.') }} {{ $abrev }} por pacote
                         </p>
                         <p class="text-lg font-bold tabular-nums">
-                            {{ number_format($subtotal, 2, ',', '.') }} m²
+                            {{ number_format($subtotal, $decimais, ',', '.') }} {{ $abrev }}
                         </p>
                     </div>
 
@@ -115,7 +123,7 @@
 
                 <p class="text-2xl font-black text-green-800">Falta pouco!</p>
                 <p class="text-lg text-gray-800 mt-2">
-                    Faltam <span class="font-bold">{{ number_format($restante, 2, ',', '.') }} m²</span>
+                    Faltam <span class="font-bold">{{ number_format($restante, $decimais, ',', '.') }} {{ $abrev }}</span>
                     para completar o pedido.
                 </p>
 
@@ -127,7 +135,7 @@
                     </p>
                     <p class="text-lg text-green-900 mt-1">
                         {{ number_format((float) $ideal->thickness_mm, 0, ',', '.') }} mm de espessura ·
-                        {{ number_format((float) $ideal->sqm_per_package, 4, ',', '.') }} m²
+                        {{ number_format($ideal->rendimentoPara($produto->calc_mode), 4, ',', '.') }} {{ $abrev }}
                     </p>
                 </div>
 
@@ -152,7 +160,7 @@
             // Reexibe o aviso a cada mudança do que falta, mas respeita quem já dispensou aquele estado
             (function () {
                 const aviso = document.getElementById('aviso-fechamento');
-                const chave = 'aviso-{{ $carregamento->id }}-{{ number_format($restante, 2, '.', '') }}';
+                const chave = 'aviso-{{ $carregamento->id }}-{{ number_format($restante, 4, '.', '') }}';
 
                 if (sessionStorage.getItem(chave) !== 'dispensado') {
                     aviso.classList.remove('hidden');

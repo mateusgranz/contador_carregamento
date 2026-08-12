@@ -21,9 +21,13 @@ class Product extends Model
     ];
 
     /**
-     * Unidades que só o modo pacote usa — a conta de pacotes gera área.
+     * Cada modalidade que conta pacotes produz uma unidade só:
+     * a conta de área gera m², a de volume gera m³.
      */
-    public const UNIDADES_PACOTE = ['m2', 'm3'];
+    public const UNIDADES_POR_MODO = [
+        'pacote' => ['m2'],
+        'volume' => ['m3'],
+    ];
 
     /**
      * Unidades inteiras: não existe meia caixa nem meia peça.
@@ -67,15 +71,29 @@ class Product extends Model
     }
 
     /**
+     * Indica se o produto é contado por pacotes (área ou volume).
+     */
+    public function contaPacotes(): bool
+    {
+        return ! $this->usaPeso();
+    }
+
+    /**
+     * Indica se o total acumulado é volume em vez de área.
+     */
+    public function usaVolume(): bool
+    {
+        return $this->calc_mode === 'volume';
+    }
+
+    /**
      * Unidades que o gestor pode escolher na modalidade informada.
      *
      * @return array<string, string> código => rótulo do select
      */
     public static function unidadesPara(string $calcMode): array
     {
-        $codigos = $calcMode === 'peso'
-            ? array_keys(self::UNIDADES)
-            : self::UNIDADES_PACOTE;
+        $codigos = self::UNIDADES_POR_MODO[$calcMode] ?? array_keys(self::UNIDADES);
 
         $opcoes = [];
 

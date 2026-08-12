@@ -13,16 +13,28 @@
         Define como o carregador vai contar este produto no pátio.
     </p>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
         <label class="block cursor-pointer">
             <input type="radio" name="calc_mode" value="pacote" class="peer sr-only"
                    @checked($modoAtual === 'pacote')>
             <div class="h-full p-4 border-2 border-gray-200 rounded-lg peer-checked:border-indigo-600 peer-checked:bg-indigo-50">
-                <p class="font-semibold text-gray-900">Por pacotes</p>
+                <p class="font-semibold text-gray-900">Por área (m²)</p>
                 <p class="text-xs text-gray-600 mt-1">
-                    O carregador conta pacotes e o sistema acumula m².
-                    Use para forro, deck, tábua.
+                    Conta pacotes e acumula m², usando largura e comprimento.
+                    Use para forro e deck.
+                </p>
+            </div>
+        </label>
+
+        <label class="block cursor-pointer">
+            <input type="radio" name="calc_mode" value="volume" class="peer sr-only"
+                   @checked($modoAtual === 'volume')>
+            <div class="h-full p-4 border-2 border-gray-200 rounded-lg peer-checked:border-indigo-600 peer-checked:bg-indigo-50">
+                <p class="font-semibold text-gray-900">Por volume (m³)</p>
+                <p class="text-xs text-gray-600 mt-1">
+                    Conta pacotes e acumula m³, entrando também a espessura.
+                    Use para tábua e madeira serrada.
                 </p>
             </div>
         </label>
@@ -33,7 +45,7 @@
             <div class="h-full p-4 border-2 border-gray-200 rounded-lg peer-checked:border-indigo-600 peer-checked:bg-indigo-50">
                 <p class="font-semibold text-gray-900">Por peso</p>
                 <p class="text-xs text-gray-600 mt-1">
-                    O carregador pesa na balança e o sistema converte na unidade de venda.
+                    Pesa na balança e converte na unidade de venda.
                     Use para bobina de zinco, barra de ferro.
                 </p>
             </div>
@@ -50,15 +62,18 @@
             <select id="unit" name="unit"
                     class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                 @foreach (Product::UNIDADES as $codigo => [$abrev, $singular, $plural])
+                    {{-- data-modos diz em quais modalidades esta unidade faz sentido --}}
                     <option value="{{ $codigo }}"
-                            data-so-peso="{{ in_array($codigo, Product::UNIDADES_PACOTE, true) ? '0' : '1' }}"
+                            data-modos="{{ collect(['pacote', 'volume', 'peso'])
+                                ->filter(fn ($modo) => array_key_exists($codigo, Product::unidadesPara($modo)))
+                                ->implode(' ') }}"
                             @selected($unidadeAtual === $codigo)>
                         {{ ucfirst($singular) }} ({{ $abrev }})
                     </option>
                 @endforeach
             </select>
             <p id="aviso-unidade" class="mt-1 text-xs text-gray-500 hidden">
-                No modo pacote a conta gera área, então só m² e m³ ficam disponíveis.
+                Contando pacotes a unidade é definida pela conta: m² por área, m³ por volume.
             </p>
             <x-input-error :messages="$errors->get('unit')" class="mt-1" />
         </div>
@@ -92,12 +107,13 @@
         const unidade       = document.getElementById('unit');
         const kg            = document.getElementById('kg_per_unit');
 
-        function ehPeso() {
-            return document.querySelector('input[name="calc_mode"]:checked')?.value === 'peso';
+        function modoAtual() {
+            return document.querySelector('input[name="calc_mode"]:checked')?.value ?? 'pacote';
         }
 
         function aplicarModo() {
-            const peso = ehPeso();
+            const modo = modoAtual();
+            const peso = modo === 'peso';
 
             configPeso.classList.toggle('hidden', !peso);
             avisoPacotes.classList.toggle('hidden', !peso);
@@ -112,27 +128,32 @@
             desabilitar(secaoPacotes, peso);
             kg.disabled = !peso;
 
-            filtrarUnidades(peso);
+            filtrarUnidades(modo);
             atualizarPrevia();
         }
 
-        // No modo pacote a conta gera área: as demais unidades não fazem sentido
-        function filtrarUnidades(peso) {
-            let precisaTrocar = false;
+        // Contando pacotes a unidade vem da conta: m² por área, m³ por volume
+        function filtrarUnidades(modo) {
+            let primeiraValida = null;
+            let precisaTrocar  = false;
 
             Array.from(unidade.options).forEach(function (opcao) {
-                const soPeso = opcao.dataset.soPeso === '1';
+                const permitida = (opcao.dataset.modos ?? '').split(' ').includes(modo);
 
-                opcao.hidden   = soPeso && !peso;
-                opcao.disabled = soPeso && !peso;
+                opcao.hidden   = ! permitida;
+                opcao.disabled = ! permitida;
 
-                if (opcao.selected && opcao.disabled) {
+                if (permitida && primeiraValida === null) {
+                    primeiraValida = opcao.value;
+                }
+
+                if (opcao.selected && ! permitida) {
                     precisaTrocar = true;
                 }
             });
 
-            if (precisaTrocar) {
-                unidade.value = 'm2';
+            if (precisaTrocar && primeiraValida !== null) {
+                unidade.value = primeiraValida;
             }
         }
 
@@ -150,7 +171,7 @@
             const valor = parseFloat(kg.value);
             const nome  = unidade.options[unidade.selectedIndex]?.text ?? 'unidade';
 
-            previa.textContent = valor > 0 && ehPeso()
+            previa.textContent = valor > 0 && modoAtual() === 'peso'
                 ? `1 ${nome} = ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} kg`
                 : '';
         }

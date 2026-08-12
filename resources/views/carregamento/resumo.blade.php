@@ -1,9 +1,13 @@
 @php
     $produto  = $carregamento->product;
     $ehPeso   = $produto->usaPeso();
-    $abrev    = $ehPeso ? $produto->unidadeAbreviada() : 'm²';
-    $decimais = $ehPeso && $produto->unidadeDiscreta() ? 0 : 2;
-    $total    = (float) ($ehPeso ? $carregamento->loaded_qty : $carregamento->loaded_sqm);
+    $abrev    = $produto->unidadeAbreviada();
+    $decimais = match (true) {
+        $ehPeso && $produto->unidadeDiscreta() => 0,
+        $produto->usaVolume()                  => 4,
+        default                                => 2,
+    };
+    $total = (float) $carregamento->loaded_amount;
 
     // Texto pronto para o WhatsApp — montado aqui apenas para exibição/compartilhamento
     if ($ehPeso) {
@@ -16,7 +20,7 @@
             .number_format((float) $item->packageType->length_cm / 100, 2, ',', '.').' m'
             .' x '.number_format((float) $item->packageType->width_mm, 0, ',', '.').' mm'
             .' — '.$item->quantity.' pct'
-            .' = '.number_format((float) $item->subtotal_sqm, 2, ',', '.').' m²'
+            .' = '.number_format((float) $item->subtotal, $decimais, ',', '.').' '.$abrev
         )->implode("\n");
     }
 
@@ -91,11 +95,11 @@
                             </p>
                             <p class="text-base text-gray-600">
                                 {{ $item->quantity }} {{ $item->quantity === 1 ? 'pacote' : 'pacotes' }} ×
-                                {{ number_format((float) $item->packageType->sqm_per_package, 4, ',', '.') }} m²
+                                {{ number_format($item->packageType->rendimentoPara($produto->calc_mode), 4, ',', '.') }} {{ $abrev }}
                             </p>
                         </div>
                         <p class="font-bold tabular-nums whitespace-nowrap">
-                            {{ number_format((float) $item->subtotal_sqm, 2, ',', '.') }} m²
+                            {{ number_format((float) $item->subtotal, $decimais, ',', '.') }} {{ $abrev }}
                         </p>
                     </div>
                 @empty

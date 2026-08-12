@@ -11,12 +11,12 @@ class LoadingItem extends Model
         'loading_id',
         'package_type_id',
         'quantity',
-        'subtotal_sqm',
+        'subtotal',
     ];
 
     protected $casts = [
-        'quantity'     => 'integer',
-        'subtotal_sqm' => 'decimal:4',
+        'quantity' => 'integer',
+        'subtotal' => 'decimal:4',
     ];
 
     /**
@@ -36,13 +36,15 @@ class LoadingItem extends Model
     }
 
     /**
-     * Calcula e preenche subtotal_sqm antes de salvar.
-     * subtotal_sqm = sqm_per_package × quantity
+     * Calcula e preenche o subtotal antes de salvar, na unidade da
+     * modalidade do produto: m² no modo pacote, m³ no modo volume.
      */
     protected static function booted(): void
     {
         static::saving(function (LoadingItem $item) {
-            $item->subtotal_sqm = $item->packageType->sqm_per_package * $item->quantity;
+            $modo = $item->loading->product->calc_mode;
+
+            $item->subtotal = $item->packageType->rendimentoPara($modo) * $item->quantity;
         });
     }
 }

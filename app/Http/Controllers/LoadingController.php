@@ -23,7 +23,7 @@ class LoadingController extends Controller
         // Só entram produtos prontos para carregar em alguma das modalidades
         $produtos = Product::withCount('packageTypes')
             ->where(function ($query) {
-                $query->where('calc_mode', 'pacote')->has('packageTypes');
+                $query->whereIn('calc_mode', ['pacote', 'volume'])->has('packageTypes');
             })
             ->orWhere(function ($query) {
                 $query->where('calc_mode', 'peso')->whereNotNull('kg_per_unit');
@@ -65,18 +65,13 @@ class LoadingController extends Controller
      */
     public function store(StoreLoadingRequest $request): RedirectResponse
     {
-        $produto = $request->produto();
-        $ehPeso  = $produto->usaPeso();
-
-        $carregamento = DB::transaction(function () use ($request, $ehPeso) {
+        $carregamento = DB::transaction(function () use ($request) {
             $carregamento = Loading::create([
-                'user_id'    => $request->user()->id,
-                'product_id' => $request->product_id,
-                'target_sqm' => $ehPeso ? null : $request->quantidade,
-                'loaded_sqm' => $ehPeso ? null : 0,
-                'target_qty' => $ehPeso ? $request->quantidade : null,
-                'loaded_qty' => $ehPeso ? 0 : null,
-                'status'     => 'em_andamento',
+                'user_id'       => $request->user()->id,
+                'product_id'    => $request->product_id,
+                'target_amount' => $request->quantidade,
+                'loaded_amount' => 0,
+                'status'        => 'em_andamento',
             ]);
 
             // Guarda o que o carregador preencheu nos campos extras ativos
@@ -112,7 +107,7 @@ class LoadingController extends Controller
     }
 
     /**
-     * Contador de pacotes (modo pacote).
+     * Contador de pacotes — serve tanto ao modo pacote (m²) quanto ao volume (m³).
      */
     private function telaDeContagem(Loading $carregamento): View
     {
@@ -129,10 +124,11 @@ class LoadingController extends Controller
 
         return view('carregamento.show', [
             'carregamento' => $carregamento,
+            'produto'      => $carregamento->product,
             'tipos'        => $tipos,
             'quantidades'  => $quantidades,
             'ideal'        => $ideal,
-            'restante'     => $carregamento->restanteSqm(),
+            'restante'     => $carregamento->restante(),
         ]);
     }
 
@@ -145,7 +141,7 @@ class LoadingController extends Controller
     private function telaDePesagem(Loading $carregamento, Request $request): View
     {
         $produto  = $carregamento->product;
-        $restante = $carregamento->restanteQty();
+        $restante = $carregamento->restante();
 
         $calculo = null;
         $peso    = $request->query('peso');
@@ -186,9 +182,7 @@ class LoadingController extends Controller
 
         if ($carregamento->emAndamento()) {
             // Garante que o total salvo reflete exatamente os registros
-            $carregamento->product->usaPeso()
-                ? $carregamento->recalcularQuantidade()
-                : $carregamento->recalcularSqm();
+            $carregamento->recalcularTotal();
 
             $carregamento->update([
                 'status'      => 'finalizado',

@@ -15,6 +15,7 @@ class PackageType extends Model
         'thickness_mm',
         'pieces_count',
         'sqm_per_package',
+        'cbm_per_package',
     ];
 
     protected $casts = [
@@ -23,6 +24,7 @@ class PackageType extends Model
         'thickness_mm'    => 'decimal:2',
         'pieces_count'    => 'integer',
         'sqm_per_package' => 'decimal:4',
+        'cbm_per_package' => 'decimal:6',
     ];
 
     /**
@@ -42,15 +44,31 @@ class PackageType extends Model
     }
 
     /**
-     * Calcula e preenche sqm_per_package antes de salvar.
-     * Nunca confiar no valor vindo do formulário.
+     * Quanto este pacote rende na unidade da modalidade informada.
+     */
+    public function rendimentoPara(string $calcMode): float
+    {
+        return $calcMode === 'volume'
+            ? (float) $this->cbm_per_package
+            : (float) $this->sqm_per_package;
+    }
+
+    /**
+     * Calcula área e volume antes de salvar.
+     * Nunca confiar nos valores vindos do formulário.
+     *
+     * Os dois são sempre gravados: assim trocar a modalidade do produto
+     * não obriga a recalcular os pacotes já cadastrados.
      */
     protected static function booted(): void
     {
         static::saving(function (PackageType $packageType) {
-            $packageType->sqm_per_package = ($packageType->width_mm / 1000)
-                * ($packageType->length_cm / 100)
-                * $packageType->pieces_count;
+            $larguraM     = $packageType->width_mm / 1000;
+            $comprimentoM = $packageType->length_cm / 100;
+            $espessuraM   = $packageType->thickness_mm / 1000;
+
+            $packageType->sqm_per_package = $larguraM * $comprimentoM * $packageType->pieces_count;
+            $packageType->cbm_per_package = $larguraM * $comprimentoM * $espessuraM * $packageType->pieces_count;
         });
     }
 }

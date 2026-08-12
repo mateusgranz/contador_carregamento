@@ -7,7 +7,8 @@
                 <p class="text-xl font-bold text-amber-900">Você tem um carregamento em andamento</p>
                 <p class="text-lg text-amber-900 mt-1">
                     {{ $emAndamento->product->name }} —
-                    {{ number_format((float) $emAndamento->loaded_sqm, 2, ',', '.') }} m² já carregados
+                    {{ number_format((float) $emAndamento->loaded_amount, 2, ',', '.') }}
+                    {{ $emAndamento->product->unidadeAbreviada() }} já carregados
                 </p>
                 <a href="{{ route('carregamento.show', $emAndamento) }}"
                    class="mt-4 flex items-center justify-center w-full min-h-[64px] px-6 bg-amber-500 text-white text-xl font-bold rounded-xl">
@@ -39,8 +40,9 @@
                                     {{ number_format((float) $produto->kg_per_unit, 4, ',', '.') }} kg
                                     por {{ $produto->unidadeLabel(1) }}
                                 @else
+                                    {{ $produto->usaVolume() ? 'Por volume (m³)' : 'Por pacote (m²)' }} ·
                                     {{ $produto->package_types_count }}
-                                    {{ $produto->package_types_count === 1 ? 'tipo de pacote' : 'tipos de pacote' }}
+                                    {{ $produto->package_types_count === 1 ? 'tipo' : 'tipos' }}
                                 @endif
                             </span>
                         </span>

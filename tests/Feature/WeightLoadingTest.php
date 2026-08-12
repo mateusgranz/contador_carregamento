@@ -225,16 +225,17 @@ class WeightLoadingTest extends TestCase
             ->assertSee('Quantos metros lineares você vai carregar?');
     }
 
-    public function test_inicio_grava_a_quantidade_em_target_qty(): void
+    public function test_inicio_grava_a_quantidade_em_target_amount(): void
     {
         $this->actingAs($this->carregador)
             ->post('/carregamento', ['product_id' => $this->bobina->id, 'quantidade' => 30]);
 
         $carregamento = Loading::first();
 
-        $this->assertEqualsWithDelta(30.0, (float) $carregamento->target_qty, 0.0001);
-        $this->assertEqualsWithDelta(0.0, (float) $carregamento->loaded_qty, 0.0001);
-        $this->assertNull($carregamento->target_sqm);
+        $this->assertEqualsWithDelta(30.0, (float) $carregamento->target_amount, 0.0001);
+        $this->assertEqualsWithDelta(0.0, (float) $carregamento->loaded_amount, 0.0001);
+        // A quantidade fica na unidade do produto — aqui, metros lineares
+        $this->assertSame('m', $carregamento->product->unit);
     }
 
     public function test_tela_mostra_o_peso_alvo_antes_de_pesar(): void
@@ -281,7 +282,7 @@ class WeightLoadingTest extends TestCase
         $this->actingAs($this->carregador)->get(route('carregamento.show', $carregamento).'?peso=35');
 
         $this->assertSame(0, $carregamento->weighings()->count());
-        $this->assertEqualsWithDelta(0.0, (float) $carregamento->fresh()->loaded_qty, 0.0001);
+        $this->assertEqualsWithDelta(0.0, (float) $carregamento->fresh()->loaded_amount, 0.0001);
     }
 
     public function test_registrar_pesagem_acumula_a_quantidade(): void
@@ -294,8 +295,8 @@ class WeightLoadingTest extends TestCase
             ['weight_kg' => 20.40, 'quantity' => 20],
         )->assertRedirect(route('carregamento.show', $carregamento));
 
-        $this->assertEqualsWithDelta(20.0, (float) $carregamento->fresh()->loaded_qty, 0.0001);
-        $this->assertEqualsWithDelta(10.0, $carregamento->fresh()->restanteQty(), 0.0001);
+        $this->assertEqualsWithDelta(20.0, (float) $carregamento->fresh()->loaded_amount, 0.0001);
+        $this->assertEqualsWithDelta(10.0, $carregamento->fresh()->restante(), 0.0001);
 
         // Segunda bobina: 10,20 kg = 10 m
         $this->actingAs($this->carregador)->post(
@@ -303,7 +304,7 @@ class WeightLoadingTest extends TestCase
             ['weight_kg' => 10.20, 'quantity' => 10],
         );
 
-        $this->assertEqualsWithDelta(30.0, (float) $carregamento->fresh()->loaded_qty, 0.0001);
+        $this->assertEqualsWithDelta(30.0, (float) $carregamento->fresh()->loaded_amount, 0.0001);
         $this->assertSame(2, $carregamento->weighings()->count());
     }
 
@@ -322,7 +323,7 @@ class WeightLoadingTest extends TestCase
             ->delete(route('carregamento.pesagens.destroy', [$carregamento, $pesagem]))
             ->assertRedirect();
 
-        $this->assertEqualsWithDelta(0.0, (float) $carregamento->fresh()->loaded_qty, 0.0001);
+        $this->assertEqualsWithDelta(0.0, (float) $carregamento->fresh()->loaded_amount, 0.0001);
         $this->assertSame(0, $carregamento->weighings()->count());
     }
 
@@ -353,8 +354,8 @@ class WeightLoadingTest extends TestCase
         $carregamento = Loading::create([
             'user_id'    => $this->carregador->id,
             'product_id' => $forro->id,
-            'target_sqm' => 50,
-            'loaded_sqm' => 0,
+            'target_amount' => 50,
+            'loaded_amount' => 0,
             'status'     => 'em_andamento',
         ]);
 
@@ -377,7 +378,7 @@ class WeightLoadingTest extends TestCase
 
         $carregamento->refresh();
         $this->assertSame('finalizado', $carregamento->status);
-        $this->assertEqualsWithDelta(30.0, (float) $carregamento->loaded_qty, 0.0001);
+        $this->assertEqualsWithDelta(30.0, (float) $carregamento->loaded_amount, 0.0001);
 
         $this->actingAs($this->carregador)->post(
             route('carregamento.pesagens.store', $carregamento),
@@ -411,8 +412,8 @@ class WeightLoadingTest extends TestCase
         return Loading::create([
             'user_id'    => $this->carregador->id,
             'product_id' => $this->bobina->id,
-            'target_qty' => $metros,
-            'loaded_qty' => 0,
+            'target_amount' => $metros,
+            'loaded_amount' => 0,
             'status'     => 'em_andamento',
         ]);
     }

@@ -1,9 +1,13 @@
 @php
     $produto  = $carregamento->product;
     $ehPeso   = $produto->usaPeso();
-    $abrev    = $ehPeso ? $produto->unidadeAbreviada() : 'm²';
-    $decimais = $ehPeso && $produto->unidadeDiscreta() ? 0 : 2;
-    $total    = (float) ($ehPeso ? $carregamento->loaded_qty : $carregamento->loaded_sqm);
+    $abrev    = $produto->unidadeAbreviada();
+    $decimais = match (true) {
+        $ehPeso && $produto->unidadeDiscreta() => 0,
+        $produto->usaVolume()                  => 4,
+        default                                => 2,
+    };
+    $total = (float) $carregamento->loaded_amount;
 @endphp
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -93,7 +97,7 @@
                 <tr>
                     <th>Tipo de pacote</th>
                     <th class="num">Pacotes</th>
-                    <th class="num">m² / pacote</th>
+                    <th class="num">{{ $abrev }} / pacote</th>
                     <th class="num">Subtotal</th>
                 </tr>
             </thead>
@@ -107,8 +111,8 @@
                             — {{ $item->packageType->pieces_count }} peças
                         </td>
                         <td class="num">{{ $item->quantity }}</td>
-                        <td class="num">{{ number_format((float) $item->packageType->sqm_per_package, 4, ',', '.') }}</td>
-                        <td class="num">{{ number_format((float) $item->subtotal_sqm, 2, ',', '.') }} m²</td>
+                        <td class="num">{{ number_format($item->packageType->rendimentoPara($produto->calc_mode), 4, ',', '.') }}</td>
+                        <td class="num">{{ number_format((float) $item->subtotal, $decimais, ',', '.') }} {{ $abrev }}</td>
                     </tr>
                 @endforeach
             </tbody>

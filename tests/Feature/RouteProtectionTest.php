@@ -112,8 +112,8 @@ class RouteProtectionTest extends TestCase
         $carregamento = Loading::create([
             'user_id'    => $dono->id,
             'product_id' => $produto->id,
-            'target_sqm' => 50,
-            'loaded_sqm' => 0,
+            'target_amount' => 50,
+            'loaded_amount' => 0,
             'status'     => 'em_andamento',
         ]);
 

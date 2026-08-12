@@ -23,8 +23,8 @@ class LoadingWeighingController extends Controller
                 'quantity'  => $request->quantity,
             ]);
 
-            // loaded_qty sempre recalculado a partir das pesagens
-            $carregamento->recalcularQuantidade();
+            // Total sempre recalculado a partir das pesagens
+            $carregamento->recalcularTotal();
         });
 
         return redirect()->route('carregamento.show', $carregamento);
@@ -42,7 +42,7 @@ class LoadingWeighingController extends Controller
         DB::transaction(function () use ($carregamento, $pesagem) {
             $pesagem->delete();
 
-            $carregamento->recalcularQuantidade();
+            $carregamento->recalcularTotal();
         });
 
         return redirect()->route('carregamento.show', $carregamento);

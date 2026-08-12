@@ -49,6 +49,7 @@
                                             {{ number_format((float) $produto->kg_per_unit, 4, ',', '.') }} kg
                                             por {{ $produto->unidadeLabel(1) }}
                                         @else
+                                            {{ $produto->usaVolume() ? 'Por volume' : 'Por área' }} —
                                             {{ $produto->package_types_count }}
                                             {{ $produto->package_types_count === 1 ? 'tipo de pacote' : 'tipos de pacote' }}
                                         @endif

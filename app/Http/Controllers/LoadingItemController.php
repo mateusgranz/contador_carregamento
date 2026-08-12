@@ -25,8 +25,8 @@ class LoadingItemController extends Controller
             // subtotal_sqm é calculado no Model (evento saving)
             $item->save();
 
-            // loaded_sqm sempre recalculado a partir dos itens, nunca somado incrementalmente
-            $carregamento->recalcularSqm();
+            // Total sempre recalculado a partir dos itens, nunca somado incrementalmente
+            $carregamento->recalcularTotal();
         });
 
         // Volta ancorado no pacote tocado para não perder a posição da rolagem
@@ -56,7 +56,7 @@ class LoadingItemController extends Controller
                 $item->save();
             }
 
-            $carregamento->recalcularSqm();
+            $carregamento->recalcularTotal();
         });
 
         return back()->withFragment("tipo-{$pacote->id}");

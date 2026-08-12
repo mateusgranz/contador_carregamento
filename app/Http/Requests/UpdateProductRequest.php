@@ -14,15 +14,16 @@ class UpdateProductRequest extends FormRequest
 
     public function rules(): array
     {
-        $ehPeso = $this->input('calc_mode') === 'peso';
+        $modo   = (string) $this->input('calc_mode');
+        $ehPeso = $modo === 'peso';
 
-        $unidades = implode(',', array_keys(Product::unidadesPara($ehPeso ? 'peso' : 'pacote')));
+        $unidades = implode(',', array_keys(Product::unidadesPara($modo)));
 
         $regras = [
             'name'        => ['required', 'string', 'max:255'],
             'unit'        => ['required', "in:{$unidades}"],
             'description' => ['nullable', 'string'],
-            'calc_mode'   => ['required', 'in:pacote,peso'],
+            'calc_mode'   => ['required', 'in:pacote,volume,peso'],
         ];
 
         if ($ehPeso) {
@@ -59,7 +60,9 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'kg_per_unit.required' => 'Informe quantos kg pesa cada unidade.',
-            'unit.in'              => 'No modo pacote a unidade precisa ser m² ou m³.',
+            'unit.in'              => $this->input('calc_mode') === 'volume'
+                ? 'No modo volume a unidade precisa ser m³.'
+                : 'No modo pacote a unidade precisa ser m².',
         ];
     }
 }

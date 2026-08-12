@@ -13,7 +13,7 @@
             @if ($completo)
                 <p class="text-lg font-semibold text-green-700 uppercase tracking-wide">Pedido completo</p>
                 <p class="text-5xl font-black leading-none mt-1 tabular-nums text-green-700">
-                    {{ number_format((float) $carregamento->loaded_qty, $decimais, ',', '.') }}
+                    {{ number_format((float) $carregamento->loaded_amount, $decimais, ',', '.') }}
                     <span class="text-2xl font-bold">{{ $abrev }}</span>
                 </p>
             @else
@@ -28,8 +28,8 @@
             @endif
 
             <p class="text-base text-gray-600 mt-2">
-                Pedido: {{ number_format((float) $carregamento->target_qty, $decimais, ',', '.') }} {{ $abrev }}
-                · Já separado: {{ number_format((float) $carregamento->loaded_qty, $decimais, ',', '.') }} {{ $abrev }}
+                Pedido: {{ number_format((float) $carregamento->target_amount, $decimais, ',', '.') }} {{ $abrev }}
+                · Já separado: {{ number_format((float) $carregamento->loaded_amount, $decimais, ',', '.') }} {{ $abrev }}
             </p>
         </div>
     </div>

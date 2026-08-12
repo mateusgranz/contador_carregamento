@@ -94,7 +94,7 @@ class LoadingTest extends TestCase
         $this->actingAs($this->carregador)
             ->post("/carregamento/{$carregamento->id}/itens", ['package_type_id' => $this->pacotePequeno->id]);
 
-        $this->assertEquals(24.0, (float) $carregamento->fresh()->loaded_sqm);
+        $this->assertEquals(24.0, (float) $carregamento->fresh()->loaded_amount);
         $this->assertSame(2, $carregamento->loadingItems()->where('package_type_id', $this->pacoteGrande->id)->first()->quantity);
     }
 
@@ -107,7 +107,7 @@ class LoadingTest extends TestCase
         $this->actingAs($this->carregador)
             ->delete("/carregamento/{$carregamento->id}/itens/{$this->pacoteGrande->id}");
 
-        $this->assertEquals(0.0, (float) $carregamento->fresh()->loaded_sqm);
+        $this->assertEquals(0.0, (float) $carregamento->fresh()->loaded_amount);
         $this->assertSame(0, $carregamento->loadingItems()->count());
     }
 
@@ -141,7 +141,7 @@ class LoadingTest extends TestCase
 
         $tipos = $this->produto->packageTypes()->get();
 
-        $this->assertNull($carregamento->restanteSqm());
+        $this->assertNull($carregamento->restante());
         $this->assertNull($carregamento->pacoteIdealPara($tipos));
     }
 
@@ -188,7 +188,7 @@ class LoadingTest extends TestCase
             ->post('/carregamento', ['product_id' => $this->produto->id, 'quantidade' => 15]);
 
         $carregamento = Loading::latest('id')->first();
-        $this->assertEquals(15.0, (float) $carregamento->target_sqm);
+        $this->assertEquals(15.0, (float) $carregamento->target_amount);
     }
 
     public function test_metragem_e_obrigatoria_para_iniciar(): void
@@ -259,7 +259,7 @@ class LoadingTest extends TestCase
             ->post("/carregamento/{$carregamento->id}/itens", ['package_type_id' => $this->pacoteGrande->id])
             ->assertRedirect();
 
-        $this->assertEquals(19.2, (float) $carregamento->fresh()->loaded_sqm);
+        $this->assertEquals(19.2, (float) $carregamento->fresh()->loaded_amount);
     }
 
     public function test_carregamento_finalizado_redireciona_do_contador_para_o_resumo(): void
@@ -305,7 +305,7 @@ class LoadingTest extends TestCase
             ->post("/carregamento/{$carregamento->id}/itens", ['package_type_id' => $pacoteAlheio->id])
             ->assertSessionHasErrors('package_type_id');
 
-        $this->assertEquals(0.0, (float) $carregamento->fresh()->loaded_sqm);
+        $this->assertEquals(0.0, (float) $carregamento->fresh()->loaded_amount);
     }
 
     private function criarCarregamento(?float $targetSqm = null): Loading
@@ -313,8 +313,8 @@ class LoadingTest extends TestCase
         return Loading::create([
             'user_id'    => $this->carregador->id,
             'product_id' => $this->produto->id,
-            'target_sqm' => $targetSqm,
-            'loaded_sqm' => 0,
+            'target_amount' => $targetSqm,
+            'loaded_amount' => 0,
             'status'     => 'em_andamento',
         ]);
     }
