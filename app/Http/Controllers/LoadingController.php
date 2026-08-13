@@ -220,10 +220,14 @@ class LoadingController extends Controller
 
         $carregamento->load($this->relacoesDoResumo($carregamento));
 
+        // O comprovante sai com ~850 KB porque a DejaVu vai embutida inteira.
+        // Tentei ligar isFontSubsettingEnabled, que derruba para 20 KB, mas o
+        // DomPDF quebra na geração com "Path must not be empty" ao montar o
+        // subset. Fica o arquivo maior: melhor pesado que indisponível.
         $pdf = Pdf::loadView('carregamento.pdf', compact('carregamento'))
             ->setPaper('a4');
 
-        return $pdf->download("carregamento-{$carregamento->id}.pdf");
+        return $pdf->download($carregamento->nomeDoArquivoPdf());
     }
 
     /**

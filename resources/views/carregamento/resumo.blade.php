@@ -9,32 +9,22 @@
     };
     $total = (float) $carregamento->loaded_amount;
 
-    // Texto pronto para o WhatsApp — montado aqui apenas para exibição/compartilhamento
-    if ($ehPeso) {
-        $linhas = $carregamento->weighings->map(fn ($p) => '• '
-            .number_format((float) $p->quantity, $decimais, ',', '.').' '.$abrev
-            .' ('.number_format((float) $p->weight_kg, 2, ',', '.').' kg)'
-        )->implode("\n");
-    } else {
-        $linhas = $carregamento->loadingItems->map(fn ($item) => '• '
-            .number_format((float) $item->packageType->length_cm / 100, 2, ',', '.').' m'
-            .' x '.number_format((float) $item->packageType->width_mm, 0, ',', '.').' mm'
-            .' — '.$item->quantity.' pct'
-            .' = '.number_format((float) $item->subtotal, $decimais, ',', '.').' '.$abrev
-        )->implode("\n");
+    $nomeArquivo = $carregamento->nomeDoArquivoPdf();
+
+    // Legenda curta que acompanha o comprovante. O detalhamento fica no PDF —
+    // repetir tudo aqui só polui a conversa e quebra em telas estreitas.
+    $legendaWhatsapp = "*{$produto->name}* — "
+        .number_format($total, $decimais, ',', '.')." {$abrev}\n"
+        .$carregamento->finished_at->format('d/m/Y \à\s H:i')
+        .' · '.$carregamento->user->name;
+
+    $identificador = $carregamento->fieldValues->first(
+        fn ($v) => $v->loadingField->type === 'texto' && filled($v->value),
+    );
+
+    if ($identificador) {
+        $legendaWhatsapp .= "\n{$identificador->loadingField->label}: {$identificador->valorFormatado()}";
     }
-
-    $extras = $carregamento->fieldValues
-        ->map(fn ($v) => $v->loadingField->label.': '.$v->valorFormatado())
-        ->implode("\n");
-
-    $textoWhatsapp = "*Carregamento finalizado*\n"
-        ."Produto: {$produto->name}\n"
-        ."Carregador: {$carregamento->user->name}\n"
-        ."Data: ".$carregamento->finished_at->format('d/m/Y H:i')."\n"
-        .($extras !== '' ? $extras."\n" : '')
-        ."\n".$linhas."\n\n"
-        ."*TOTAL: ".number_format($total, $decimais, ',', '.')." {$abrev}*";
 @endphp
 
 <x-carregamento-layout titulo="Carregamento finalizado" titulo-tela="Carregamento finalizado">
@@ -115,9 +105,25 @@
             </a>
 
             <button type="button" id="btn-whatsapp"
-                    class="flex items-center justify-center w-full min-h-[64px] px-6 bg-green-600 text-white text-xl font-bold rounded-xl active:bg-green-700">
+                    class="flex items-center justify-center w-full min-h-[64px] px-6 bg-green-600 text-white text-xl font-bold rounded-xl active:bg-green-700 disabled:opacity-60">
                 Enviar no WhatsApp
             </button>
+
+            {{-- Aparece só quando o aparelho não sabe anexar sozinho.
+                 O link é tocado pelo carregador de propósito: abrir o WhatsApp
+                 por script depois de baixar o arquivo é barrado como pop-up. --}}
+            <div id="aviso-anexo" class="hidden bg-amber-50 border-2 border-amber-300 rounded-xl p-4">
+                <p class="text-lg text-gray-800">
+                    O comprovante foi baixado no aparelho. Abra o WhatsApp, toque no clipe
+                    <span class="font-bold">📎</span>, escolha <span class="font-bold">Documento</span>
+                    e selecione o arquivo.
+                </p>
+                <a id="link-whatsapp" href="{{ 'https://wa.me/?text='.rawurlencode($legendaWhatsapp) }}"
+                   target="_blank" rel="noopener"
+                   class="mt-4 flex items-center justify-center w-full min-h-[56px] px-6 bg-green-600 text-white text-lg font-bold rounded-xl active:bg-green-700">
+                    Abrir o WhatsApp
+                </a>
+            </div>
 
             <a href="{{ route('carregamento.index') }}"
                class="flex items-center justify-center w-full min-h-[64px] px-6 border-2 border-gray-400 text-gray-800 text-xl font-bold rounded-xl">
@@ -128,34 +134,71 @@
     </div>
 
     <script>
-        // Compartilha o PDF pelo share nativo; se indisponível, cai no link wa.me
+        // O que vai para o WhatsApp é o comprovante em PDF, nunca um texto solto.
         (function () {
             const botao = document.getElementById('btn-whatsapp');
-            const texto = @json($textoWhatsapp);
+            const aviso = document.getElementById('aviso-anexo');
+            const rotulo = botao.textContent.trim();
+
             const urlPdf = @json(route('carregamento.pdf', $carregamento));
-            const nomeArquivo = 'carregamento-{{ $carregamento->id }}.pdf';
+            const nomeArquivo = @json($nomeArquivo);
+            // Legenda curta: o comprovante já traz todos os números
+            const legenda = @json($legendaWhatsapp);
+
+            // Baixa o PDF assim que a tela abre. Duas razões: o toque no botão
+            // responde na hora, e o compartilhamento nativo exige ser chamado
+            // dentro do gesto do usuário — esperar o download aqui o invalidaria.
+            const preparo = fetch(urlPdf)
+                .then((r) => (r.ok ? r.blob() : Promise.reject(r.status)))
+                .then((blob) => new File([blob], nomeArquivo, { type: 'application/pdf' }))
+                .catch(() => null);
+
+            function podeAnexar(arquivo) {
+                return arquivo
+                    && typeof navigator.canShare === 'function'
+                    && navigator.canShare({ files: [arquivo] });
+            }
 
             botao.addEventListener('click', async function () {
                 botao.disabled = true;
+                botao.textContent = 'Preparando…';
 
-                try {
-                    if (navigator.canShare) {
-                        const resposta = await fetch(urlPdf);
-                        const blob = await resposta.blob();
-                        const arquivo = new File([blob], nomeArquivo, { type: 'application/pdf' });
+                const arquivo = await preparo;
 
-                        if (navigator.canShare({ files: [arquivo] })) {
-                            await navigator.share({ text: texto, files: [arquivo] });
-                            botao.disabled = false;
+                botao.textContent = rotulo;
+                botao.disabled = false;
+
+                if (podeAnexar(arquivo)) {
+                    try {
+                        await navigator.share({ files: [arquivo], text: legenda });
+                        return;
+                    } catch (erro) {
+                        // Cancelado pelo carregador: não abre mais nada
+                        if (erro && erro.name === 'AbortError') {
                             return;
                         }
                     }
-                } catch (erro) {
-                    // Compartilhamento cancelado ou indisponível — segue para o link wa.me
                 }
 
-                window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
-                botao.disabled = false;
+                // Sem compartilhamento nativo (navegador antigo, ou site sem
+                // HTTPS): entrega o arquivo e mostra como anexar.
+                if (arquivo) {
+                    const url = URL.createObjectURL(arquivo);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = nomeArquivo;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 30000);
+                } else {
+                    // Nem o download deu certo: abre o PDF pela rota mesmo
+                    window.location.href = urlPdf;
+                    return;
+                }
+
+                aviso.classList.remove('hidden');
+                aviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
         })();
     </script>

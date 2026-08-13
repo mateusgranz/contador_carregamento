@@ -85,6 +85,18 @@ class Loading extends Model
     }
 
     /**
+     * Nome do comprovante como chega no WhatsApp — quem recebe precisa
+     * identificar o carregamento sem abrir o arquivo.
+     */
+    public function nomeDoArquivoPdf(): string
+    {
+        $produto = \Illuminate\Support\Str::slug($this->product->name);
+        $data    = ($this->finished_at ?? now())->format('d-m-Y');
+
+        return "carregamento-{$produto}-{$data}.pdf";
+    }
+
+    /**
      * Quanto ainda falta para atingir o pedido, na unidade do produto.
      */
     public function restante(): ?float
