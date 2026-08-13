@@ -157,6 +157,20 @@ Daí em diante, cadastre os outros pelo menu **Usuários**.
 
 ---
 
+## Instalar na tela de início do celular
+
+O sistema traz `manifest.json` e ícones, então abre como aplicativo — sem a
+barra de endereço ocupando espaço.
+
+- **Android (Chrome):** menu ⋮ → *Instalar aplicativo* ou *Adicionar à tela inicial*
+- **iPhone (Safari):** botão de compartilhar → *Adicionar à Tela de Início*
+
+> **Exige HTTPS.** Em domínio `http://` (como o `sslip.io` de teste) o Android
+> cria só um atalho, que continua abrindo dentro do navegador. Com o domínio
+> próprio e o certificado do Coolify, aí sim abre em tela cheia.
+
+---
+
 ## Depois do deploy
 
 ### Trocar a senha de alguém

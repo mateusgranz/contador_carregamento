@@ -13,6 +13,8 @@
 
     <title>{{ $titulo }}</title>
 
+    @include('partials.pwa')
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 {{-- Fundo branco e alto contraste: a tela é usada sob sol no pátio --}}
